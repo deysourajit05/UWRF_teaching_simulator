@@ -192,10 +192,6 @@ details.src a{color:inherit}
         <div class="chart-wrap"><svg id="chart" role="img" aria-label="Dry matter loss by stage, your plan versus best practice"></svg></div>
       </div>
       <div class="panel">
-        <h2>What happened, and why</h2>
-        <ul class="msgs" id="msgs"></ul>
-      </div>
-      <div class="panel">
         <details class="src">
           <summary>About this model and its sources</summary>
           <p class="note">This is a simplified teaching model. Relationships follow trends reported in the literature below, but the numbers are illustrative, not actual values or predictions for a real farm.</p>
@@ -445,7 +441,6 @@ function update(){
   $("#metrics").innerHTML=h;
   drawChart(r,b);
   $("#s-score").textContent=r.score; $("#s-loss").textContent=r.total.toFixed(1)+"%"; $("#s-dot").style.background=sl==="good"?"var(--good)":sl==="warn"?"var(--warn)":"var(--crit)";
-  $("#msgs").innerHTML=messages(r).map(m=>'<li class="'+m.lvl+'"><span class="ic" aria-label="'+WORD[m.lvl]+'">'+ICON[m.lvl]+'</span><div><b>'+m.t+'</b><span>'+m.why+'</span></div></li>').join("");
 }
 
 let lastR=null,lastB=null;
