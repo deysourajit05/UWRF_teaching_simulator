@@ -2,121 +2,147 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-</head>
-<body>
-<title>Silage Decision Lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silage Management Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: header band, then a two-column workbench (decisions left, results right) that stacks on narrow screens. */
+/* UWRF-style palette: Passion Red, black, white, light-blue accent. Arial. Mobile-first: single column, big tap targets, sticky score bar. */
 :root{
-  --bg:#f6f7f2; --surface:#ffffff; --surface-2:#eef1e8; --ink:#14201a; --ink-2:#4a5a50; --muted:#7c8a80;
-  --line:#dde3d7; --accent:#2f6b3a; --accent-ink:#ffffff; --gold:#c08a10; --gold-soft:#fbf1d6;
-  --series-you:#2a78d6; --series-best:#a3aaa1; --grid:#e1e0d9; --axis:#c3c2b7;
-  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-ink:#006300;
-  --font: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --mono: ui-monospace,"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --bg:#f4f4f4; --surface:#ffffff; --surface-2:#f2f2f2; --ink:#111111; --ink-2:#474747; --muted:#6b6b6b;
+  --line:#d9d9d9; --accent:#be0f34; --accent-ink:#ffffff; --blue:#2ec7ff; --blue-soft:#e3f6fe;
+  --series-you:#0b6fa4; --series-best:#8a8a8a; --grid:#e4e4e4; --axis:#bdbdbd;
+  --good:#0e8a7d; --warn:#f2a900; --crit:#9a0c2a; --good-ink:#0a6b60;
+  --font: Arial,"Helvetica Neue",Helvetica,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#111613; --surface:#1a201c; --surface-2:#222a24; --ink:#eef2ec; --ink-2:#bcc7bf; --muted:#8f9b93;
-  --line:#2f3832; --accent:#5fae6c; --accent-ink:#0d1410; --gold:#e0ad38; --gold-soft:#2c2614;
-  --series-you:#3987e5; --series-best:#6f766e; --grid:#2c2c2a; --axis:#4a4a46;
-  --good-ink:#0ca30c; color-scheme:dark;
+  --bg:#0e0e0e; --surface:#1a1a1a; --surface-2:#242424; --ink:#f2f2f2; --ink-2:#cfcfcf; --muted:#9d9d9d;
+  --line:#333333; --accent:#be0f34; --accent-ink:#ffffff; --blue:#2ec7ff; --blue-soft:#10303b;
+  --series-you:#2ec7ff; --series-best:#7a7a7a; --grid:#2a2a2a; --axis:#444444;
+  --good:#2bb5a5; --warn:#f2b134; --crit:#e0505f; --good-ink:#2bb5a5; color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --bg:#111613; --surface:#1a201c; --surface-2:#222a24; --ink:#eef2ec; --ink-2:#bcc7bf; --muted:#8f9b93;
-  --line:#2f3832; --accent:#5fae6c; --accent-ink:#0d1410; --gold:#e0ad38; --gold-soft:#2c2614;
-  --series-you:#3987e5; --series-best:#6f766e; --grid:#2c2c2a; --axis:#4a4a46;
-  --good-ink:#0ca30c; color-scheme:dark;
+  --bg:#0e0e0e; --surface:#1a1a1a; --surface-2:#242424; --ink:#f2f2f2; --ink-2:#cfcfcf; --muted:#9d9d9d;
+  --line:#333333; --accent:#be0f34; --accent-ink:#ffffff; --blue:#2ec7ff; --blue-soft:#10303b;
+  --series-you:#2ec7ff; --series-best:#7a7a7a; --grid:#2a2a2a; --axis:#444444;
+  --good:#2bb5a5; --warn:#f2b134; --crit:#e0505f; --good-ink:#2bb5a5; color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{background:var(--bg)}
-body{color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;margin:0}
+html,body{background:var(--bg);-webkit-text-size-adjust:100%}
+body{color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;margin:0;overflow-x:hidden}
 .wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.band{background:var(--accent);color:var(--accent-ink)}
-header.band .wrap{padding-block:18px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
-.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;opacity:.85;font-weight:600}
-h1{margin:2px 0 0;font-size:clamp(1.6rem,2.6vw,2.3rem);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
-.farm{font-size:.95rem;opacity:.92;max-width:62ch}
-.crop-switch{display:flex;gap:6px;background:rgba(0,0,0,.18);padding:4px;border-radius:999px}
-.crop-switch button{border:0;background:transparent;color:inherit;font:inherit;font-weight:700;padding:8px 16px;border-radius:999px;cursor:pointer}
-.crop-switch button[aria-pressed="true"]{background:var(--surface);color:var(--ink)}
+header.band{background:var(--accent);color:var(--accent-ink);position:relative;overflow:hidden}
+header.band::after{content:"";position:absolute;right:0;top:0;bottom:0;width:70px;background:linear-gradient(90deg,transparent 0 12px,var(--blue) 12px 24px,transparent 24px 30px,#000 30px 38px,transparent 38px 44px,#000 44px 70px);opacity:.9}
+header.band .wrap{padding-block:18px;padding-right:96px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;position:relative;z-index:1}
+@media (max-width:700px){header.band .wrap{padding-right:44px}header.band::after{width:28px;background:linear-gradient(90deg,transparent 0 6px,var(--blue) 6px 12px,#000 12px 28px)}}
+.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;opacity:.95;font-weight:700}
+h1{margin:2px 0 0;font-size:clamp(1.6rem,6vw,2.4rem);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.farm{font-size:1.05rem;opacity:.95;font-weight:700;margin-top:2px}
+.crop-switch{display:flex;gap:6px;background:rgba(0,0,0,.25);padding:4px;border-radius:999px}
+.crop-switch button{border:0;background:transparent;color:inherit;font:inherit;font-weight:700;padding:10px 18px;min-height:44px;border-radius:999px;cursor:pointer}
+.crop-switch button[aria-pressed="true"]{background:#fff;color:#111}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-block:14px}
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
-.tab{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:650;padding:9px 14px;border-radius:10px;cursor:pointer}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;padding:10px 14px;min-height:44px;border-radius:10px;cursor:pointer}
 .tab .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface-2);font-size:.8rem;margin-right:6px}
-.tab[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.tab[aria-selected="true"] .n{background:var(--gold);color:#14201a}
+.tab[aria-selected="true"]{background:#111;color:#fff;border-color:#111}
+.tab[aria-selected="true"] .n{background:var(--blue);color:#111}
 .spacer{flex:1}
-.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:650;padding:9px 14px;border-radius:10px;cursor:pointer}
-.btn.primary{background:var(--gold);border-color:var(--gold);color:#14201a}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;padding:10px 14px;min-height:44px;border-radius:10px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 select,input{font:inherit;color:var(--ink)}
-select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
-:focus-visible{outline:3px solid var(--series-you);outline-offset:2px}
+select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:44px;max-width:100%}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .bench{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:20px;padding-bottom:28px;align-items:start}
 @media (max-width:900px){.bench{grid-template-columns:minmax(0,1fr)}}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
 .panel h2{margin:0 0 4px;font-size:1.15rem}
-.panel .lede{margin:0 0 14px;color:var(--ink-2);font-size:.92rem}
-.group{display:grid;gap:16px}
+.panel .lede{margin:0 0 14px;color:var(--ink-2);font-size:.95rem}
+.group{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .group+.group{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line)}
-.ctl{display:grid;gap:6px}
+.ctl{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-width:0}
+.ctl select{width:100%}
 .ctl .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-.ctl label{font-weight:650}
+.ctl label{font-weight:700}
 .ctl .val{font-variant-numeric:tabular-nums;font-weight:800;font-size:1.05rem;white-space:nowrap}
-.ctl .hint{font-size:.82rem;color:var(--muted)}
-.ctl .tag{font-size:.8rem;font-weight:700;color:var(--gold);}
-input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+.ctl .hint{font-size:.85rem;color:var(--muted)}
+.ctl .tag{font-size:.85rem;font-weight:700;color:var(--accent)}
+:root[data-theme="dark"] .ctl .tag{color:var(--blue)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ctl .tag{color:var(--blue)}}
+input[type=range]{width:100%;accent-color:var(--accent);height:36px;margin:0}
 .ticks{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .station-title{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.station-title .badge{width:30px;height:30px;border-radius:50%;background:var(--gold);color:#14201a;display:grid;place-items:center;font-weight:800}
+.station-title .badge{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
 .station-title h3{margin:0;font-size:1.05rem}
 .results{display:grid;gap:16px;min-width:0}
 .hero{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
-@media (max-width:560px){.hero{grid-template-columns:1fr}}
+@media (max-width:560px){.hero{grid-template-columns:1fr;justify-items:start}}
 .score{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;text-align:center;border:10px solid var(--line);position:relative}
 .score b{display:block;font-size:2.8rem;line-height:1}
-.score span{font-size:.85rem;color:var(--ink-2);font-weight:650}
-.verdict{font-size:1.3rem;font-weight:800;margin:0}
+.score span{font-size:.85rem;color:var(--ink-2);font-weight:700}
+.verdict{font-size:1.25rem;font-weight:800;margin:0}
 .verdict-sub{margin:4px 0 0;color:var(--ink-2)}
-.tons{margin-top:10px;font-size:.98rem;background:var(--gold-soft);border-radius:10px;padding:10px 12px}
+.tons{margin-top:10px;font-size:.98rem;background:var(--blue-soft);border-radius:10px;padding:10px 12px}
 .tons strong{font-variant-numeric:tabular-nums}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
 .metric{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);display:grid;gap:4px;align-content:start}
 .metric .lab{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:700}
 .metric .num{font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
-.metric .cmp{font-size:.82rem;color:var(--muted)}
-.pill{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:3px 9px;border-radius:999px;width:max-content;max-width:100%}
-.pill i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:900}
-.pill.good{background:color-mix(in srgb,var(--good) 16%,transparent)} .pill.good i{background:var(--good)}
-.pill.warn{background:color-mix(in srgb,var(--warn) 22%,transparent)} .pill.warn i{background:var(--warn);color:#14201a}
+.metric .cmp{font-size:.85rem;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:700;padding:3px 9px;border-radius:999px;width:max-content;max-width:100%}
+.pill i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:900;flex:none}
+.pill.good{background:color-mix(in srgb,var(--good) 18%,transparent)} .pill.good i{background:var(--good)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 24%,transparent)} .pill.warn i{background:var(--warn);color:#111}
 .pill.bad{background:color-mix(in srgb,var(--crit) 16%,transparent)} .pill.bad i{background:var(--crit)}
-.chart-wrap{overflow-x:auto}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;color:var(--ink-2);margin:4px 0 6px}
+.chart-wrap{width:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem;color:var(--ink-2);margin:4px 0 6px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend b{width:14px;height:14px;border-radius:3px;display:inline-block}
 svg text{fill:var(--ink-2);font-family:var(--font)}
 .msgs{display:grid;gap:10px;margin:0;padding:0;list-style:none}
 .msgs li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:10px;background:var(--surface-2)}
 .msgs li .ic{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:.85rem}
-.msgs li.good .ic{background:var(--good)} .msgs li.warn .ic{background:var(--warn);color:#14201a} .msgs li.bad .ic{background:var(--crit)}
+.msgs li.good .ic{background:var(--good)} .msgs li.warn .ic{background:var(--warn);color:#111} .msgs li.bad .ic{background:var(--crit)}
 .msgs li b{display:block}
-.msgs li span{color:var(--ink-2);font-size:.92rem}
+.msgs li span{color:var(--ink-2);font-size:.95rem}
 details.src{margin-top:4px}
-details.src summary{cursor:pointer;font-weight:700}
-details.src ul{padding-left:18px;color:var(--ink-2);font-size:.9rem}
-.note{font-size:.85rem;color:var(--muted)}
+details.src summary{cursor:pointer;font-weight:700;min-height:32px}
+details.src ul{padding-left:18px;color:var(--ink-2);font-size:.92rem}
+details.src h4{margin:16px 0 6px}
+details.src p.ref{margin:0 0 8px;padding-left:1.6em;text-indent:-1.6em;color:var(--ink-2);font-size:.9rem;overflow-wrap:anywhere}
+details.src a{color:inherit}
+.note{font-size:.88rem;color:var(--muted)}
 .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);padding:6px 9px;border-radius:8px;font-size:.85rem;z-index:20;font-variant-numeric:tabular-nums}
 .hidden-station{display:none}
+.sticky{display:none}
+@media (max-width:900px){
+  .sticky{display:flex;position:sticky;top:0;z-index:15;gap:14px;align-items:center;justify-content:space-between;background:#111;color:#fff;padding:8px max(16px,env(safe-area-inset-left,0px));font-size:.95rem}
+  .sticky b{font-variant-numeric:tabular-nums;font-size:1.15rem}
+  .sticky .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+}
+@media (max-width:640px){
+  .tabs{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .tab{text-align:left}
+  .tab[data-st="all"]{grid-column:1/-1}
+  .toolbar .spacer{display:none}
+  .toolbar label.note{width:100%;margin-bottom:-6px}
+  .toolbar select{width:100%}
+  .toolbar .btn{width:100%}
+  .crop-switch{width:100%}.crop-switch button{flex:1}
+  .panel{padding:14px}
+  .metric .num{font-size:1.45rem}
+}
 @media (prefers-reduced-motion:no-preference){ .score{transition:border-color .3s} }
 </style>
+</head>
+<body>
+
 
 <header class="band">
   <div class="wrap">
     <div>
-      <div class="eyebrow">Forage Production · Teaching model</div>
-      <h1>Silage Decision Lab</h1>
-      <div class="farm">Falcon Ridge Dairy (fictional): 300 cows near River Falls, WI, storing corn silage and alfalfa haylage in a drive-over pile. You are the crop consultant this fall.</div>
+      <div class="eyebrow">Teaching Demonstration Model</div>
+      <h1>Silage Management Lab</h1>
+      <div class="farm">Falcon Ridge Dairy</div>
     </div>
     <div class="crop-switch" role="group" aria-label="Crop">
       <button id="crop-corn" type="button" aria-pressed="true">Corn silage</button>
@@ -124,6 +150,8 @@ details.src ul{padding-left:18px;color:var(--ink-2);font-size:.9rem}
     </div>
   </div>
 </header>
+
+<div class="sticky" id="sticky" aria-live="polite"><span><span class="dot" id="s-dot"></span>Score <b id="s-score">--</b></span><span>DM loss <b id="s-loss">--</b></span></div>
 
 <div class="wrap">
   <div class="toolbar">
@@ -137,13 +165,11 @@ details.src ul{padding-left:18px;color:var(--ink-2);font-size:.9rem}
     <div class="spacer"></div>
     <label for="preset" class="note">Scenario</label>
     <select id="preset"></select>
-    <button id="reset" class="btn primary" type="button">Reset to best practice</button>
-  </div>
+    </div>
 
   <div class="bench">
     <section class="panel" aria-label="Decisions">
       <h2>Your decisions</h2>
-      <p class="lede">Ask the class to predict first, then move the sliders and compare with best practice.</p>
       <div id="controls"></div>
     </section>
 
@@ -174,15 +200,23 @@ details.src ul{padding-left:18px;color:var(--ink-2);font-size:.9rem}
           <summary>About this model and its sources</summary>
           <p class="note">This is a simplified teaching model. Relationships follow trends reported in the literature below, but the numbers are illustrative, not predictions for a real farm.</p>
           <ul>
-            <li>Harvest moisture targets for piles: corn 30–35% DM; alfalfa 35–40% DM, butyric risk below 35% (Roach &amp; Holmes, UW Extension, drive-over pile construction).</li>
-            <li>Corn starting target about 33–37% DM at 2/3–3/4 kernel milk line; drier corn needs shorter chop and tighter processing (Ferraretto, UW Extension).</li>
-            <li>Kernel processing (1–3 mm roll gap), theoretical length of cut, cutting height and maturity effects (Ferraretto, Shaver &amp; Luck, 2018, J. Dairy Sci.).</li>
-            <li>Porosity from density and DM (Richard et al. equation, in Borreani et al., 2018); keep porosity below 0.4; layers 6 in or less.</li>
-            <li>DM losses by stage, sealing delay, cover type and feedout rate (Borreani et al., 2018, J. Dairy Sci.); feedout at least 6 in/day, 12 in better (Roach &amp; Holmes).</li>
-            <li>Inoculants: homofermentative for faster fermentation and alfalfa; <i>L. buchneri</i> for aerobic stability (Contreras-Govea &amp; Muck, UW Extension; Arriola et al., 2011; Queiroz et al., 2013).</li>
-            <li>Alfalfa protein breakdown decreases as DM at ensiling increases (Muck, 1987); wet grass forage produces effluent (Fransen &amp; Strubi, 1998).</li>
-            <li>Kernel processing score bands (≥70 optimal, 50–70 adequate, below 50 poor) are a common industry benchmark.</li>
+            <li>Harvest moisture targets for piles: corn silage 30–35% DM; alfalfa haylage 35–40% DM, with butyric acid risk below 35% (Roach &amp; Holmes, n.d.).</li>
+            <li>Corn is harvested at about 32–37% DM, roughly 1/3 to 3/4 kernel milk line. About 35% DM supported peak milk production (Ferraretto et al., 2018), so 35% is used as best practice here. Drier corn needs a shorter chop and tighter processing (Ferraretto et al., 2018).</li>
+            <li>Kernel processing (1–3 mm roll gap), theoretical length of cut, cutting height and maturity effects (Ferraretto et al., 2018). Kernel processing score: 70 or more optimal, 50–69 sufficient, below 50 suboptimal (Ferraretto et al., 2018).</li>
+            <li>Porosity is calculated from DM density and DM content (Richard et al. equation, in Borreani et al., 2018). Keep porosity below 0.4 and layers at 6 in or less (Roach &amp; Holmes, n.d.).</li>
+            <li>DM losses by stage, sealing delay, cover type and feedout rate (Borreani et al., 2018). Feedout of at least 6 in/day, and 12 in is better (Roach &amp; Holmes, n.d.).</li>
+            <li>Inoculants: homofermentative products speed fermentation, and heterofermentative products improve aerobic stability (Arriola et al., 2011; Contreras-Govea &amp; Muck, n.d.; Queiroz et al., 2013).</li>
+            <li>Alfalfa protein breakdown decreases as DM at ensiling increases (Muck, 1987). Wet grass forage produces effluent (Fransen &amp; Strubi, 1998).</li>
           </ul>
+          <h4>References</h4>
+          <p class="ref">Arriola, K. G., Kim, S. C., &amp; Adesogan, A. T. (2011). Effect of applying inoculants with heterolactic or homolactic and heterolactic bacteria on the fermentation and quality of corn silage. <i>Journal of Dairy Science, 94</i>(3), 1511–1516. <a href="https://doi.org/10.3168/jds.2010-3807" target="_blank" rel="noopener">https://doi.org/10.3168/jds.2010-3807</a></p>
+          <p class="ref">Borreani, G., Tabacco, E., Schmidt, R. J., Holmes, B. J., &amp; Muck, R. E. (2018). Silage review: Factors affecting dry matter and quality losses in silages. <i>Journal of Dairy Science, 101</i>(5), 3952–3979. <a href="https://doi.org/10.3168/jds.2017-13837" target="_blank" rel="noopener">https://doi.org/10.3168/jds.2017-13837</a></p>
+          <p class="ref">Contreras-Govea, F., &amp; Muck, R. (n.d.). <i>Microbial inoculants for silage</i>. University of Wisconsin–Madison Division of Extension. <a href="https://cropsandsoils.extension.wisc.edu/articles/microbial-inoculants-for-silage" target="_blank" rel="noopener">https://cropsandsoils.extension.wisc.edu/articles/microbial-inoculants-for-silage</a></p>
+          <p class="ref">Ferraretto, L. F., Shaver, R. D., &amp; Luck, B. D. (2018). Silage review: Recent advances and future technologies for whole-plant and fractionated corn silage harvesting. <i>Journal of Dairy Science, 101</i>(5), 3937–3951. <a href="https://doi.org/10.3168/jds.2017-13728" target="_blank" rel="noopener">https://doi.org/10.3168/jds.2017-13728</a></p>
+          <p class="ref">Fransen, S. C., &amp; Strubi, F. J. (1998). Relationships among absorbents on the reduction of grass silage effluent and silage quality. <i>Journal of Dairy Science, 81</i>(10), 2633–2644.</p>
+          <p class="ref">Muck, R. E. (1987). Dry matter level effects on alfalfa silage quality I. Nitrogen transformations. <i>Transactions of the ASAE, 30</i>(1), 7–14.</p>
+          <p class="ref">Queiroz, O. C. M., Arriola, K. G., Daniel, J. L. P., &amp; Adesogan, A. T. (2013). Effects of 8 chemical and bacterial additives on the quality of corn silage. <i>Journal of Dairy Science, 96</i>(9), 5836–5843. <a href="https://doi.org/10.3168/jds.2013-6691" target="_blank" rel="noopener">https://doi.org/10.3168/jds.2013-6691</a></p>
+          <p class="ref">Roach, J., &amp; Holmes, B. (n.d.). <i>Drive-over silage pile construction</i>. University of Wisconsin–Madison Division of Extension. <a href="https://cropsandsoils.extension.wisc.edu/articles/drive-over-silage-pile-construction" target="_blank" rel="noopener">https://cropsandsoils.extension.wisc.edu/articles/drive-over-silage-pile-construction</a></p>
         </details>
       </div>
     </section>
@@ -210,7 +244,7 @@ const DEF={
       {id:"tractor",label:"Packing tractor weight",min:20000,max:60000,step:5000,unit:"lb"},
       {id:"delay",label:"Days from finishing to sealing",min:0,max:5,step:1,unit:"days"},
       {id:"cover",label:"Cover",type:"select",opts:[["none","No cover"],["pe","6-mil plastic, few tires"],["pet","6-mil plastic, tires touching"],["ob","Oxygen-barrier film + plastic, tires touching"]]},
-      {id:"inoc",label:"Inoculant",type:"select",opts:[["none","None"],["homo","Homofermentative"],["buch","L. buchneri"],["combo","Combination"]]}],
+      {id:"inoc",label:"Inoculant",type:"select",opts:[["none","None"],["homo","Homofermentative"],["hetero","Heterofermentative"],["combo","Combination"]]}],
     feed:[
       {id:"rate",label:"Feedout rate from the face",min:2,max:18,step:1,unit:"in/day"},
       {id:"season",label:"Feeding season",type:"select",opts:[["cool","Fall / winter"],["warm","Summer"]]}]
@@ -227,28 +261,30 @@ DEF.alf.pack=DEF.corn.pack; DEF.alf.feed=DEF.corn.feed;
 const STATIONS=[["harvest","1","Harvest timing and moisture"],["chop","2","Chop length and processing"],["pack","3","Filling, packing and sealing"],["feed","4","Feedout"]];
 
 const BEST={
-  corn:{dm:35,tloc:19,gap:"2",cut:8,layer:6,tractor:40000,delay:0,cover:"ob",inoc:"buch",rate:12,season:"cool"},
+  corn:{dm:35,tloc:19,gap:"2",cut:8,layer:6,tractor:40000,delay:0,cover:"ob",inoc:"hetero",rate:12,season:"cool"},
   alf:{mat:"bud",dm:40,tloc:10,layer:6,tractor:40000,delay:0,cover:"ob",inoc:"homo",rate:12,season:"cool"}
 };
 const PRESETS={
-  corn:[["best","Best practice",{}],
+  corn:[
     ["wet","Rushed harvest: too wet",{dm:27}],
     ["dry","Late harvest: too dry",{dm:43,tloc:25,gap:"6"}],
     ["pack","Poor packing, slow cover",{layer:14,tractor:20000,delay:3,cover:"pe"}],
-    ["summer","Slow summer feedout",{rate:4,season:"warm",inoc:"none"}]],
-  alf:[["best","Best practice",{}],
+    ["summer","Slow summer feedout",{rate:4,season:"warm",inoc:"none"}],
+    ["best","Best practice",{}]],
+  alf:[
     ["wet","Not wilted enough",{dm:28,inoc:"none"}],
     ["late","Cut late and over-dried",{mat:"fb",dm:56}],
     ["pack","Poor packing, slow cover",{layer:14,tractor:20000,delay:3,cover:"pe"}],
-    ["summer","Slow summer feedout",{rate:4,season:"warm"}]]
+    ["summer","Slow summer feedout",{rate:4,season:"warm"}],
+    ["best","Best practice",{}]]
 };
 const FARM={corn:{tons:3000,name:"corn silage"},alf:{tons:1500,name:"alfalfa haylage"}};
 
 let crop="corn", station="all";
-let state={...BEST.corn};
+let state={...BEST.corn,dm:27};
 
 /* ---------- model ---------- */
-function milkLine(dm){ if(dm<29)return"≈ 1/4 milk line"; if(dm<32)return"≈ 1/2 milk line"; if(dm<36)return"≈ 2/3 milk line"; if(dm<39)return"≈ 3/4 milk line"; if(dm<42)return"near black layer"; return"black layer, past target"; }
+function milkLine(dm){ if(dm<29)return"before 1/3 milk line"; if(dm<32)return"≈ 1/3 milk line"; if(dm<36)return"≈ 1/2 to 2/3 milk line"; if(dm<39)return"≈ 3/4 milk line"; if(dm<42)return"near black layer"; return"black layer, past target"; }
 function porosity(dmdLb,dmPct,ash){ const dm=dmPct/100, rwb=dmdLb*16.018/dm/1000; return 1-rwb*((1-dm)/1+dm*(1-ash)/1.6+dm*ash/2.5); }
 
 function model(c,s){
@@ -262,17 +298,17 @@ function model(c,s){
   const L={};
   L.field=corn?1.5+0.15*pos(s.dm-40):2+0.25*pos(s.dm-35)+0.3*pos(s.dm-50);
   L.seal=1+2.5*s.delay;
-  const inocF={none:0,homo:corn?-0.8:-1.0,buch:0.8,combo:corn?0.3:-0.3}[s.inoc];
+  const inocF={none:0,homo:corn?-0.8:-1.0,hetero:0.8,combo:corn?0.3:-0.3}[s.inoc];
   L.ferm=3+(corn?0.6*pos(30-s.dm):0.8*pos(35-s.dm))+inocF;
   L.effl=0.9*pos(30-s.dm);
-  L.store={none:10,pe:5,pet:3,ob:1.8}[s.cover]+15*pos(por-0.40);
+  L.store={none:15,pe:5,pet:3,ob:1.8}[s.cover]+15*pos(por-0.40);
   let fo=1.5+0.6*pos(12-s.rate)+12*pos(por-0.40);
-  fo*= (warm?1.4:1)*({none:1,homo:1.1,buch:0.7,combo:0.8}[s.inoc]);
+  fo*= (warm?1.4:1)*({none:1,homo:1.1,hetero:0.7,combo:0.8}[s.inoc]);
   L.feed=fo;
   for(const k in L)L[k]=Math.max(0,L[k]);
   const total=Object.values(L).reduce((a,b)=>a+b,0);
 
-  let stab=(corn?30:40)+({none:0,homo:-4,buch:18,combo:14}[s.inoc])-60*pos(por-0.40)-1.5*pos(s.dm-(corn?38:45))-(warm?8:0);
+  let stab=(corn?30:40)+({none:0,homo:-4,hetero:18,combo:14}[s.inoc])-60*pos(por-0.40)-1.5*pos(s.dm-(corn?38:45))-(warm?8:0);
   stab=clamp(stab,8,120);
   const heat=(12/s.rate)*(30/stab);
   const heatLvl=heat>1.6?"bad":heat>1.05?"warn":"good";
@@ -308,9 +344,9 @@ function messages(r){
   if(corn){
     if(s.dm<30)add("bad","Harvested too wet ("+s.dm+"% DM)","Wet corn leaks effluent and favors clostridia (butyric acid). Nutrients and dry matter run out of the pile.");
     else if(s.dm<32)add("warn","A little wet ("+s.dm+"% DM)","Starch is still filling the kernel; some effluent risk. Waiting a few days usually pays.");
-    else if(s.dm<=37)add("good","Harvest moisture on target ("+s.dm+"% DM)","About 2/3–3/4 milk line. Packs well and keeps good starch and fiber digestibility.");
+    else if(s.dm<=37)add("good","Harvest moisture on target ("+s.dm+"% DM)","Within the 32–37% DM range (about 1/3 to 3/4 milk line). Packs well and keeps good starch and fiber digestibility.");
     else if(s.dm<=40)add("warn","Getting dry ("+s.dm+"% DM)","Harder to pack, more air in the pile, and kernels get harder to break. Tighten the processor and chop shorter.");
-    else add("bad","Harvested too dry ("+s.dm+"% DM)","Dry, hard kernels pass through the cow undigested, and air stays trapped in the pile, so it heats.");
+    else add("bad","Harvested too dry ("+s.dm+"% DM)","Dry, hard kernels pass through the cow undigested, and air stays trapped in the pile, so spoilage and heating risk rise.");
     if(r.kps>=70)add("good","Kernels well processed (score ≈ "+Math.round(r.kps)+")","Broken kernels let rumen microbes reach the starch.");
     else if(r.kps>=50)add("warn","Kernel processing adequate (score ≈ "+Math.round(r.kps)+")","Some whole kernels remain. A tighter roll gap would release more starch.");
     else add("bad","Poor kernel processing (score ≈ "+Math.round(r.kps)+")","Many whole kernels. Starch digestibility drops, especially in drier corn.");
@@ -324,7 +360,7 @@ function messages(r){
     if(s.dm<30)add("bad","Not wilted enough ("+s.dm+"% DM)","Wet alfalfa resists acidification. High risk of butyric acid, effluent, and protein breakdown.");
     else if(s.dm<35)add("warn","Slightly wet ("+s.dm+"% DM)","Below 35% DM in a pile, butyric acid risk rises. A homofermentative inoculant helps.");
     else if(s.dm<=45)add("good","Wilted to target ("+s.dm+"% DM)","Less protein breakdown and a clean, lactic fermentation.");
-    else add("warn","Over-dried ("+s.dm+"% DM)","Leaves shatter in the field and dry forage packs poorly, so the pile heats.");
+    else add("warn","Over-dried ("+s.dm+"% DM)","Leaves shatter in the field and dry forage packs poorly, so air stays trapped and spoilage risk rises.");
   }
   if(r.por<=0.40)add("good","Well packed (porosity "+r.por.toFixed(2)+")","Little air left in the pile, so less respiration and spoilage.");
   else if(r.por<=0.46)add("warn","Packing could be better (porosity "+r.por.toFixed(2)+")","Thinner layers, a heavier tractor, or more passes would push out air.");
@@ -332,7 +368,7 @@ function messages(r){
   if(s.delay>=2)add("bad","Sealing delayed "+s.delay+" days","The top layer keeps respiring and spoiling until it is covered. Seal the same day.");
   if(s.cover==="none")add("bad","No cover","The top of an uncovered pile can lose a large share of its dry matter.");
   else if(s.cover==="pe")add("warn","Thin cover, few tires","Air gets under loose plastic. Tires should touch, and overlaps should be at least 4 ft.");
-  if(r.heatLvl==="bad")add("bad","Face likely to heat (stable about "+Math.round(r.stab)+" h)","Feedout is too slow for this silage. Remove at least 6 in/day, ideally 12, or use L. buchneri.");
+  if(r.heatLvl==="bad")add("bad","Face likely to heat (stable about "+Math.round(r.stab)+" h)","Feedout is too slow for this silage. Remove at least 6 in/day, ideally 12, or use a heterofermentative inoculant (such as L. buchneri).");
   else if(r.heatLvl==="warn")add("warn","Some heating risk at the face","Feedout rate and aerobic stability are borderline, especially in warm weather.");
   else add("good","Face stays cool","Feedout outpaces air getting into the face.");
   const order={bad:0,warn:1,good:2};
@@ -381,7 +417,7 @@ function applyStation(){
 }
 function buildPresets(){
   $("#preset").innerHTML='<option value="">Custom (your settings)</option>'+PRESETS[crop].map(p=>'<option value="'+p[0]+'">'+p[1]+'</option>').join("");
-  $("#preset").value="best";
+  $("#preset").value="";
 }
 
 /* ---------- render ---------- */
@@ -398,7 +434,7 @@ function update(){
   }));
   const r=model(crop,state), b=model(crop,{...BEST[crop],season:state.season});
   // score
-  const sl=r.score>=85?"good":r.score>=70?"good":r.score>=50?"warn":"bad";
+  const sl=r.score>=70?"good":r.score>=50?"warn":"bad";
   $("#score-num").textContent=r.score;
   $("#score").style.borderColor=sl==="good"?"var(--good)":sl==="warn"?"var(--warn)":"var(--crit)";
   $("#verdict").innerHTML=(r.score>=85?"Excellent silage":r.score>=70?"Good silage":r.score>=50?"Fair silage, with problems":"Poor silage")+" "+pill(sl);
@@ -419,32 +455,36 @@ function update(){
   h+=metric("Aerobic stability",Math.round(r.stab)+" h",r.heatLvl,"Hours before the face heats · feedout "+state.rate+" in/day");
   $("#metrics").innerHTML=h;
   drawChart(r,b);
+  $("#s-score").textContent=r.score; $("#s-loss").textContent=r.total.toFixed(1)+"%"; $("#s-dot").style.background=sl==="good"?"var(--good)":sl==="warn"?"var(--warn)":"var(--crit)";
   $("#msgs").innerHTML=messages(r).map(m=>'<li class="'+m.lvl+'"><span class="ic" aria-label="'+WORD[m.lvl]+'">'+ICON[m.lvl]+'</span><div><b>'+m.t+'</b><span>'+m.why+'</span></div></li>').join("");
 }
 
+let lastR=null,lastB=null;
 function drawChart(r,b){
-  const svg=$("#chart"); const W=760, rowH=46, top=10, left=150, right=60;
-  const H=top+STAGES.length*rowH+30;
+  lastR=r; lastB=b;
+  const svg=$("#chart"); const wrapW=Math.floor($(".chart-wrap").clientWidth)||320;
+  const W=Math.max(260,wrapW), rowH=62, top=6, left=4, right=46;
+  const H=top+STAGES.length*rowH+26;
   const max=Math.max(5,...STAGES.map(([k])=>Math.max(r.L[k],b.L[k])));
   const nice=Math.ceil(max/5)*5; const x=v=>left+(W-left-right)*v/nice;
-  svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.setAttribute("width","100%"); svg.style.minWidth="520px";
+  svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.setAttribute("width",W); svg.setAttribute("height",H);
   let g="";
-  for(let t=0;t<=nice;t+=nice/5){ g+='<line x1="'+x(t)+'" x2="'+x(t)+'" y1="'+top+'" y2="'+(H-24)+'" stroke="var(--grid)" stroke-width="1"/><text x="'+x(t)+'" y="'+(H-6)+'" text-anchor="middle" font-size="12" style="font-variant-numeric:tabular-nums">'+t+'%</text>'; }
-  g+='<line x1="'+left+'" x2="'+left+'" y1="'+top+'" y2="'+(H-24)+'" stroke="var(--axis)" stroke-width="1.5"/>';
+  for(let t=0;t<=nice;t+=nice/5){ g+='<line x1="'+x(t)+'" x2="'+x(t)+'" y1="'+top+'" y2="'+(H-22)+'" stroke="var(--grid)" stroke-width="1"/><text x="'+x(t)+'" y="'+(H-6)+'" text-anchor="'+(t===0?'start':'middle')+'" font-size="12" style="font-variant-numeric:tabular-nums">'+t+'%</text>'; }
+  g+='<line x1="'+left+'" x2="'+left+'" y1="'+top+'" y2="'+(H-22)+'" stroke="var(--axis)" stroke-width="1.5"/>';
   STAGES.forEach(([k,lab],i)=>{
     const y=top+i*rowH;
-    g+='<text x="'+(left-10)+'" y="'+(y+rowH/2+4)+'" text-anchor="end" font-size="13">'+lab+'</text>';
+    g+='<text x="'+(left+6)+'" y="'+(y+14)+'" font-size="14" font-weight="700" style="fill:var(--ink)">'+lab+'</text>';
     const bar=(v,yy,col,who)=>{
       const w=Math.max(0,x(v)-left);
       return '<rect x="'+left+'" y="'+yy+'" width="'+w+'" height="15" rx="4" fill="'+col+'" data-tip="'+lab+' · '+who+': '+v.toFixed(1)+'%"/>'+
-        '<rect x="'+left+'" y="'+(yy-3)+'" width="'+(W-left-right)+'" height="21" fill="transparent" data-tip="'+lab+' · '+who+': '+v.toFixed(1)+'%"/>'+
         '<text x="'+(left+w+6)+'" y="'+(yy+12)+'" font-size="12" style="font-variant-numeric:tabular-nums">'+v.toFixed(1)+'</text>';
     };
-    g+=bar(r.L[k],y+5,"var(--series-you)","Your plan");
-    g+=bar(b.L[k],y+23,"var(--series-best)","Best practice");
+    g+=bar(r.L[k],y+20,"var(--series-you)","Your plan");
+    g+=bar(b.L[k],y+39,"var(--series-best)","Best practice");
   });
   svg.innerHTML=g;
 }
+let rzT=null; window.addEventListener("resize",()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ if(lastR) drawChart(lastR,lastB); },120); });
 
 /* tooltip */
 const tip=$("#tip");
@@ -453,7 +493,7 @@ $("#chart").addEventListener("mouseleave",()=>tip.hidden=true);
 
 /* events */
 function setCrop(c){
-  crop=c; state={...BEST[c]};
+  crop=c; state={...BEST[c],...(c==="corn"?{dm:27}:{dm:28,inoc:"none"})};
   $("#crop-corn").setAttribute("aria-pressed",String(c==="corn"));
   $("#crop-alf").setAttribute("aria-pressed",String(c==="alf"));
   buildPresets(); buildControls(); update();
@@ -461,9 +501,8 @@ function setCrop(c){
 $("#crop-corn").addEventListener("click",()=>setCrop("corn"));
 $("#crop-alf").addEventListener("click",()=>setCrop("alf"));
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{station=t.dataset.st; applyStation(); try{localStorage.setItem("sdl-station",station);}catch(e){} }));
-$("#reset").addEventListener("click",()=>{ state={...BEST[crop],season:state.season}; $("#preset").value="best"; syncControls(); update(); });
 $("#preset").addEventListener("change",e=>{ const p=PRESETS[crop].find(x=>x[0]===e.target.value); if(!p)return; state={...BEST[crop],...p[2]}; syncControls(); update(); });
-document.addEventListener("keydown",e=>{ if(e.target.matches("input,select"))return; const k={"1":"1","2":"2","3":"3","4":"4","0":"all","a":"all"}[e.key]; if(k){station=k;applyStation();} if(e.key==="r"){$("#reset").click();} });
+document.addEventListener("keydown",e=>{ if(e.target.matches("input,select"))return; const k={"1":"1","2":"2","3":"3","4":"4","0":"all","a":"all"}[e.key]; if(k){station=k;applyStation();} });
 
 try{ const s=localStorage.getItem("sdl-station"); if(s) station=s; }catch(e){}
 setCrop("corn");
