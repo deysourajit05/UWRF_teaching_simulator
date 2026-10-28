@@ -198,16 +198,7 @@ details.src a{color:inherit}
       <div class="panel">
         <details class="src">
           <summary>About this model and its sources</summary>
-          <p class="note">This is a simplified teaching model. Relationships follow trends reported in the literature below, but the numbers are illustrative, not predictions for a real farm.</p>
-          <ul>
-            <li>Harvest moisture targets for piles: corn silage 30–35% DM; alfalfa haylage 35–40% DM, with butyric acid risk below 35% (Roach &amp; Holmes, n.d.).</li>
-            <li>Corn is harvested at about 32–37% DM, roughly 1/3 to 3/4 kernel milk line. About 35% DM supported peak milk production (Ferraretto et al., 2018), so 35% is used as best practice here. Drier corn needs a shorter chop and tighter processing (Ferraretto et al., 2018).</li>
-            <li>Kernel processing (1–3 mm roll gap), theoretical length of cut, cutting height and maturity effects (Ferraretto et al., 2018). Kernel processing score: 70 or more optimal, 50–69 sufficient, below 50 suboptimal (Ferraretto et al., 2018).</li>
-            <li>Porosity is calculated from DM density and DM content (Richard et al. equation, in Borreani et al., 2018). Keep porosity below 0.4 and layers at 6 in or less (Roach &amp; Holmes, n.d.).</li>
-            <li>DM losses by stage, sealing delay, cover type and feedout rate (Borreani et al., 2018). Feedout of at least 6 in/day, and 12 in is better (Roach &amp; Holmes, n.d.).</li>
-            <li>Inoculants: homofermentative products speed fermentation, and heterofermentative products improve aerobic stability (Arriola et al., 2011; Contreras-Govea &amp; Muck, n.d.; Queiroz et al., 2013).</li>
-            <li>Alfalfa protein breakdown decreases as DM at ensiling increases (Muck, 1987). Wet grass forage produces effluent (Fransen &amp; Strubi, 1998).</li>
-          </ul>
+          <p class="note">This is a simplified teaching model. Relationships follow trends reported in the literature below, but the numbers are illustrative, not actual values or predictions for a real farm.</p>
           <h4>References</h4>
           <p class="ref">Arriola, K. G., Kim, S. C., &amp; Adesogan, A. T. (2011). Effect of applying inoculants with heterolactic or homolactic and heterolactic bacteria on the fermentation and quality of corn silage. <i>Journal of Dairy Science, 94</i>(3), 1511–1516. <a href="https://doi.org/10.3168/jds.2010-3807" target="_blank" rel="noopener">https://doi.org/10.3168/jds.2010-3807</a></p>
           <p class="ref">Borreani, G., Tabacco, E., Schmidt, R. J., Holmes, B. J., &amp; Muck, R. E. (2018). Silage review: Factors affecting dry matter and quality losses in silages. <i>Journal of Dairy Science, 101</i>(5), 3952–3979. <a href="https://doi.org/10.3168/jds.2017-13837" target="_blank" rel="noopener">https://doi.org/10.3168/jds.2017-13837</a></p>
@@ -269,14 +260,12 @@ const PRESETS={
     ["wet","Rushed harvest: too wet",{dm:27}],
     ["dry","Late harvest: too dry",{dm:43,tloc:25,gap:"6"}],
     ["pack","Poor packing, slow cover",{layer:14,tractor:20000,delay:3,cover:"pe"}],
-    ["summer","Slow summer feedout",{rate:4,season:"warm",inoc:"none"}],
-    ["best","Best practice",{}]],
+    ["summer","Slow summer feedout",{rate:4,season:"warm",inoc:"none"}]],
   alf:[
     ["wet","Not wilted enough",{dm:28,inoc:"none"}],
     ["late","Cut late and over-dried",{mat:"fb",dm:56}],
     ["pack","Poor packing, slow cover",{layer:14,tractor:20000,delay:3,cover:"pe"}],
-    ["summer","Slow summer feedout",{rate:4,season:"warm"}],
-    ["best","Best practice",{}]]
+    ["summer","Slow summer feedout",{rate:4,season:"warm"}]]
 };
 const FARM={corn:{tons:3000,name:"corn silage"},alf:{tons:1500,name:"alfalfa haylage"}};
 
@@ -344,7 +333,7 @@ function messages(r){
   if(corn){
     if(s.dm<30)add("bad","Harvested too wet ("+s.dm+"% DM)","Wet corn leaks effluent and favors clostridia (butyric acid). Nutrients and dry matter run out of the pile.");
     else if(s.dm<32)add("warn","A little wet ("+s.dm+"% DM)","Starch is still filling the kernel; some effluent risk. Waiting a few days usually pays.");
-    else if(s.dm<=37)add("good","Harvest moisture on target ("+s.dm+"% DM)","Within the 32–37% DM range (about 1/3 to 3/4 milk line). Packs well and keeps good starch and fiber digestibility.");
+    else if(s.dm<=37)add("good","Harvest moisture on target ("+s.dm+"% DM)","Packs well and keeps good starch and fiber digestibility.");
     else if(s.dm<=40)add("warn","Getting dry ("+s.dm+"% DM)","Harder to pack, more air in the pile, and kernels get harder to break. Tighten the processor and chop shorter.");
     else add("bad","Harvested too dry ("+s.dm+"% DM)","Dry, hard kernels pass through the cow undigested, and air stays trapped in the pile, so spoilage and heating risk rise.");
     if(r.kps>=70)add("good","Kernels well processed (score ≈ "+Math.round(r.kps)+")","Broken kernels let rumen microbes reach the starch.");
@@ -358,7 +347,7 @@ function messages(r){
     else if(r.matPen>0)add("warn","Cut at early bloom","Slightly lower protein than bud stage; a common yield and quality compromise.");
     else add("good","Cut at a high-quality stage","Leafy alfalfa with high protein and digestibility.");
     if(s.dm<30)add("bad","Not wilted enough ("+s.dm+"% DM)","Wet alfalfa resists acidification. High risk of butyric acid, effluent, and protein breakdown.");
-    else if(s.dm<35)add("warn","Slightly wet ("+s.dm+"% DM)","Below 35% DM in a pile, butyric acid risk rises. A homofermentative inoculant helps.");
+    else if(s.dm<35)add("warn","Slightly wet ("+s.dm+"% DM)","Butyric acid risk rises in a pile. A homofermentative inoculant helps.");
     else if(s.dm<=45)add("good","Wilted to target ("+s.dm+"% DM)","Less protein breakdown and a clean, lactic fermentation.");
     else add("warn","Over-dried ("+s.dm+"% DM)","Leaves shatter in the field and dry forage packs poorly, so air stays trapped and spoilage risk rises.");
   }
@@ -368,7 +357,7 @@ function messages(r){
   if(s.delay>=2)add("bad","Sealing delayed "+s.delay+" days","The top layer keeps respiring and spoiling until it is covered. Seal the same day.");
   if(s.cover==="none")add("bad","No cover","The top of an uncovered pile can lose a large share of its dry matter.");
   else if(s.cover==="pe")add("warn","Thin cover, few tires","Air gets under loose plastic. Tires should touch, and overlaps should be at least 4 ft.");
-  if(r.heatLvl==="bad")add("bad","Face likely to heat (stable about "+Math.round(r.stab)+" h)","Feedout is too slow for this silage. Remove at least 6 in/day, ideally 12, or use a heterofermentative inoculant (such as L. buchneri).");
+  if(r.heatLvl==="bad")add("bad","Face likely to heat (stable about "+Math.round(r.stab)+" h)","Feedout is too slow for this silage. Remove silage from the face faster, or use a heterofermentative inoculant (such as L. buchneri).");
   else if(r.heatLvl==="warn")add("warn","Some heating risk at the face","Feedout rate and aerobic stability are borderline, especially in warm weather.");
   else add("good","Face stays cool","Feedout outpaces air getting into the face.");
   const order={bad:0,warn:1,good:2};
@@ -438,19 +427,19 @@ function update(){
   $("#score-num").textContent=r.score;
   $("#score").style.borderColor=sl==="good"?"var(--good)":sl==="warn"?"var(--warn)":"var(--crit)";
   $("#verdict").innerHTML=(r.score>=85?"Excellent silage":r.score>=70?"Good silage":r.score>=50?"Fair silage, with problems":"Poor silage")+" "+pill(sl);
-  $("#verdict-sub").textContent="Best practice scores "+b.score+" with the same crop and season.";
-  $("#tons").innerHTML="Of about <strong>"+Math.round(r.dmTons).toLocaleString()+" tons of dry matter</strong> harvested as "+FARM[crop].name+", your plan loses <strong>"+Math.round(r.lostTons).toLocaleString()+" tons ("+r.total.toFixed(1)+"%)</strong>. Best practice loses "+Math.round(b.lostTons).toLocaleString()+" tons ("+b.total.toFixed(1)+"%).";
+  $("#verdict-sub").textContent="";
+  $("#tons").innerHTML="Of about <strong>"+Math.round(r.dmTons).toLocaleString()+" tons of dry matter</strong> harvested as "+FARM[crop].name+", your plan loses <strong>"+Math.round(r.lostTons).toLocaleString()+" tons ("+r.total.toFixed(1)+"%)</strong>.";
   // metrics
   let h="";
-  h+=metric("Total DM loss",r.total.toFixed(1)+"%",lvlOf(r.total,12,20,false),"Best practice "+b.total.toFixed(1)+"% · well-managed piles 10–20%");
-  h+=metric("Porosity (air space)",r.por.toFixed(2),lvlOf(r.por,0.40,0.46,false),"Packed DM density "+r.dmd.toFixed(1)+" lb/ft³ · target below 0.40");
+  h+=metric("Total DM loss",r.total.toFixed(1)+"%",lvlOf(r.total,12,20,false),"Share of harvested dry matter lost, field to feedout");
+  h+=metric("Porosity (air space)",r.por.toFixed(2),lvlOf(r.por,0.40,0.46,false),"Packed DM density "+r.dmd.toFixed(1)+" lb/ft³ · lower means less air");
   if(crop==="corn"){
     h+=metric("Kernel processing score",Math.round(r.kps),lvlOf(r.kps,70,50,true),"Est. starch digestibility "+Math.round(r.starchDig)+"% · starch content ≈ "+Math.round(r.starch)+"%");
     h+=metric("Effective fiber",r.fiber==="ok"?"Adequate":r.fiber==="low"?"Low":"High",r.fiber==="ok"?"good":"warn","Chop "+state.tloc+" mm · cutting height "+state.cut+" in ("+(r.yieldChg<0?r.yieldChg.toFixed(0)+"% yield, +"+r.ndfdChg.toFixed(1)+" pts fiber digestibility":"no yield trade-off")+")");
   }else{
     h+=metric("Crude protein (est.)",r.cp.toFixed(0)+"%",lvlOf(r.cp,20,18,true),"Set mostly by maturity at cutting");
     h+=metric("Protein broken down",Math.round(r.npn)+"%",lvlOf(r.npn,58,64,false),"Share of protein turned to non-protein N in the silo · wetter = more");
-    h+=metric("Butyric acid risk",r.butyric==="good"?"Low":r.butyric==="warn"?"Moderate":"High",r.butyric,"Rises below 35% DM in a pile");
+    h+=metric("Butyric acid risk",r.butyric==="good"?"Low":r.butyric==="warn"?"Moderate":"High",r.butyric,"Higher when the forage is too wet");
   }
   h+=metric("Aerobic stability",Math.round(r.stab)+" h",r.heatLvl,"Hours before the face heats · feedout "+state.rate+" in/day");
   $("#metrics").innerHTML=h;
