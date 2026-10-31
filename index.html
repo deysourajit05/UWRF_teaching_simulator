@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Silage Management Lab</title>
+<title>Falcon Ridge Dairy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* UWRF-style palette: Passion Red, black, white, light-blue accent. Arial. Mobile-first: single column, big tap targets, sticky score bar. */
@@ -111,6 +111,11 @@ details.src h4{margin:16px 0 6px}
 details.src p.ref{margin:0 0 8px;padding-left:1.6em;text-indent:-1.6em;color:var(--ink-2);font-size:.9rem;overflow-wrap:anywhere}
 details.src a{color:inherit}
 .note{font-size:.88rem;color:var(--muted)}
+[hidden]{display:none!important}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.actions .btn{flex:1;min-width:150px}
+.bench.solo{grid-template-columns:minmax(0,680px);justify-content:center}
+input:disabled,select:disabled,button:disabled{opacity:.55;cursor:not-allowed}
+#attempts{margin:0;padding-left:20px}#attempts li{margin:4px 0}
 .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);padding:6px 9px;border-radius:8px;font-size:.85rem;z-index:20;font-variant-numeric:tabular-nums}
 .hidden-station{display:none}
 .sticky{display:none}
@@ -141,8 +146,7 @@ details.src a{color:inherit}
   <div class="wrap">
     <div>
       <div class="eyebrow">Teaching Demonstration Model</div>
-      <h1>Silage Management Lab</h1>
-      <div class="farm">Falcon Ridge Dairy</div>
+      <h1>Falcon Ridge Dairy</h1>
     </div>
     <div class="crop-switch" role="group" aria-label="Crop">
       <button id="crop-corn" type="button" aria-pressed="true">Corn silage</button>
@@ -151,29 +155,17 @@ details.src a{color:inherit}
   </div>
 </header>
 
-<div class="sticky" id="sticky" aria-live="polite"><span><span class="dot" id="s-dot"></span>Score <b id="s-score">--</b></span><span>DM loss <b id="s-loss">--</b></span></div>
-
 <div class="wrap">
-  <div class="toolbar">
-    <div class="tabs" role="tablist" aria-label="Decision stations">
-      <button class="tab" role="tab" data-st="1" aria-selected="false"><span class="n">1</span>Harvest timing</button>
-      <button class="tab" role="tab" data-st="2" aria-selected="false"><span class="n">2</span>Chop &amp; cut</button>
-      <button class="tab" role="tab" data-st="3" aria-selected="false"><span class="n">3</span>Pack &amp; seal</button>
-      <button class="tab" role="tab" data-st="4" aria-selected="false"><span class="n">4</span>Feedout</button>
-      <button class="tab" role="tab" data-st="all" aria-selected="true"><span class="n">★</span>All decisions</button>
-    </div>
-    <div class="spacer"></div>
-    <label for="preset" class="note">Scenario</label>
-    <select id="preset"></select>
-    </div>
-
-  <div class="bench">
+  <select id="preset" hidden aria-hidden="true"></select>
+<div class="bench solo" id="bench">
     <section class="panel" aria-label="Decisions">
       <h2>Your decisions</h2>
+      <p class="lede">Set each decision, then submit your plan to see how it did.</p>
       <div id="controls"></div>
+      <div class="actions"><button id="submit" class="btn primary" type="button">Submit my plan</button><button id="again" class="btn" type="button" hidden>Play again</button></div>
     </section>
 
-    <section class="results" aria-label="Results">
+    <section class="results" id="results" aria-label="Results" hidden>
       <div class="panel">
         <div class="hero">
           <div class="score" id="score"><div><b id="score-num">--</b><span>Silage score</span></div></div>
@@ -184,12 +176,17 @@ details.src a{color:inherit}
           </div>
         </div>
       </div>
+      <div class="panel" id="attempts-panel" hidden><h2>Your attempts</h2><ol id="attempts"></ol></div>
       <div class="metrics" id="metrics"></div>
       <div class="panel">
         <h2>Where the dry matter goes</h2>
         <p class="lede">Dry matter lost at each stage, as % of what was harvested.</p>
         <div class="legend"><span><b style="background:var(--series-you)"></b>Your plan</span><span><b style="background:var(--series-best)"></b>Best practice</span></div>
         <div class="chart-wrap"><svg id="chart" role="img" aria-label="Dry matter loss by stage, your plan versus best practice"></svg></div>
+      </div>
+      <div class="panel">
+        <h2>What happened, and why</h2>
+        <ul class="msgs" id="msgs"></ul>
       </div>
       <div class="panel">
         <details class="src">
@@ -266,7 +263,8 @@ const PRESETS={
 const FARM={corn:{tons:3000,name:"corn silage"},alf:{tons:1500,name:"alfalfa haylage"}};
 
 let crop="corn", station="all";
-let state={...BEST.corn,dm:27};
+const START={corn:{dm:27,tloc:28,gap:"6",cut:6,layer:14,tractor:20000,delay:4,cover:"none",inoc:"none",rate:4,season:"warm"},alf:{mat:"fb",dm:28,tloc:26,layer:14,tractor:20000,delay:4,cover:"none",inoc:"none",rate:4,season:"warm"}};
+let state={...BEST.corn,...START.corn};
 
 /* ---------- model ---------- */
 function milkLine(dm){ if(dm<29)return"before 1/3 milk line"; if(dm<32)return"≈ 1/3 milk line"; if(dm<36)return"≈ 1/2 to 2/3 milk line"; if(dm<39)return"≈ 3/4 milk line"; if(dm<42)return"near black layer"; return"black layer, past target"; }
@@ -440,7 +438,7 @@ function update(){
   h+=metric("Aerobic stability",Math.round(r.stab)+" h",r.heatLvl,"Hours before the face heats · feedout "+state.rate+" in/day");
   $("#metrics").innerHTML=h;
   drawChart(r,b);
-  $("#s-score").textContent=r.score; $("#s-loss").textContent=r.total.toFixed(1)+"%"; $("#s-dot").style.background=sl==="good"?"var(--good)":sl==="warn"?"var(--warn)":"var(--crit)";
+  $("#msgs").innerHTML=messages(r).map(m=>'<li class="'+m.lvl+'"><span class="ic" aria-label="'+WORD[m.lvl]+'">'+ICON[m.lvl]+'</span><div><b>'+m.t+'</b><span>'+m.why+'</span></div></li>').join("");
 }
 
 let lastR=null,lastB=null;
@@ -477,7 +475,7 @@ $("#chart").addEventListener("mouseleave",()=>tip.hidden=true);
 
 /* events */
 function setCrop(c){
-  crop=c; state={...BEST[c],...(c==="corn"?{dm:27}:{dm:28,inoc:"none"})};
+  crop=c; state={...BEST[c],...START[c]};
   $("#crop-corn").setAttribute("aria-pressed",String(c==="corn"));
   $("#crop-alf").setAttribute("aria-pressed",String(c==="alf"));
   buildPresets(); buildControls(); update();
@@ -486,9 +484,13 @@ $("#crop-corn").addEventListener("click",()=>setCrop("corn"));
 $("#crop-alf").addEventListener("click",()=>setCrop("alf"));
 document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{station=t.dataset.st; applyStation(); try{localStorage.setItem("sdl-station",station);}catch(e){} }));
 $("#preset").addEventListener("change",e=>{ const p=PRESETS[crop].find(x=>x[0]===e.target.value); if(!p)return; state={...BEST[crop],...p[2]}; syncControls(); update(); });
-document.addEventListener("keydown",e=>{ if(e.target.matches("input,select"))return; const k={"1":"1","2":"2","3":"3","4":"4","0":"all","a":"all"}[e.key]; if(k){station=k;applyStation();} });
 
-try{ const s=localStorage.getItem("sdl-station"); if(s) station=s; }catch(e){}
+const bench=$("#bench"), resultsEl=$("#results"); let attempts=[];
+function setLock(v){ document.querySelectorAll("#controls input,#controls select,#preset,#crop-corn,#crop-alf").forEach(e=>e.disabled=v); }
+function showResults(on){ resultsEl.hidden=!on; bench.classList.toggle("solo",!on); }
+function renderAttempts(){ $("#attempts-panel").hidden=attempts.length<2; $("#attempts").innerHTML=attempts.map((a,i)=>"<li>Attempt "+(i+1)+" ("+a.crop+"): score <b>"+a.score+"</b>, DM loss <b>"+a.loss.toFixed(1)+"%</b></li>").join(""); }
+$("#submit").addEventListener("click",()=>{ const r=model(crop,state); attempts.push({crop:FARM[crop].name,score:r.score,loss:r.total}); renderAttempts(); setLock(true); showResults(true); update(); $("#submit").hidden=true; $("#again").hidden=false; resultsEl.scrollIntoView({behavior:"smooth",block:"start"}); });
+$("#again").addEventListener("click",()=>{ setLock(false); showResults(false); $("#submit").hidden=false; $("#again").hidden=true; setCrop(crop); window.scrollTo({top:0,behavior:"smooth"}); });
 setCrop("corn");
 })();
 </script>
