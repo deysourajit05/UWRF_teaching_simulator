@@ -220,8 +220,8 @@ const DEF={
   corn:{
     harvest:[{id:"dm",label:"Whole-plant dry matter at harvest",min:26,max:46,step:1,unit:"% DM",hint:"Wet ← → dry. Kernel stage shown on the right."}],
     chop:[
-      {id:"tloc",label:"Theoretical length of cut",min:6,max:30,step:1,unit:"mm",hint:"Chop length set on the harvester."},
-      {id:"gap",label:"Kernel processor roll gap",type:"select",opts:[["1","1 mm (tight)"],["2","2 mm"],["3","3 mm"],["4","4 mm"],["6","6 mm"],["8","8 mm (wide)"],["none","No processor"]]},
+      {id:"tloc",label:"Theoretical length of cut",min:6,max:30,step:1,unit:"in",hint:"Chop length set on the harvester."},
+      {id:"gap",label:"Kernel processor roll gap",type:"select",opts:[["1","0.04 in (tight)"],["2","0.08 in"],["3","0.12 in"],["4","0.16 in"],["6","0.24 in"],["8","0.31 in (wide)"],["none","No processor"]]},
       {id:"cut",label:"Cutting height",min:6,max:24,step:1,unit:"in",hint:"Stubble left in the field."}],
     pack:[
       {id:"layer",label:"Layer thickness while filling",min:4,max:18,step:1,unit:"in"},
@@ -231,13 +231,13 @@ const DEF={
       {id:"inoc",label:"Inoculant",type:"select",opts:[["none","None"],["homo","Homofermentative"],["hetero","Heterofermentative"],["combo","Combination"]]}],
     feed:[
       {id:"rate",label:"Feedout rate from the face",min:2,max:18,step:1,unit:"in/day"},
-      {id:"season",label:"Feeding season",type:"select",opts:[["cool","Fall / winter"],["warm","Summer"]]}]
+      {id:"season",label:"Feeding season",type:"select",opts:[["cool","Cool weather (fall, winter, early spring)"],["warm","Warm weather (late spring, summer)"]]}]
   },
   alf:{
     harvest:[
       {id:"mat",label:"Maturity at cutting",type:"select",opts:[["lv","Late vegetative"],["bud","Bud"],["eb","Early bloom"],["mb","Mid bloom"],["fb","Full bloom"]]},
       {id:"dm",label:"Wilted dry matter at ensiling",min:24,max:60,step:1,unit:"% DM",hint:"Longer wilting in the field raises DM."}],
-    chop:[{id:"tloc",label:"Theoretical length of cut",min:6,max:30,step:1,unit:"mm",hint:"Haylage is usually chopped shorter than corn."}],
+    chop:[{id:"tloc",label:"Theoretical length of cut",min:6,max:30,step:1,unit:"in",hint:"Haylage is usually chopped shorter than corn."}],
     pack:null, feed:null
   }
 };
@@ -268,14 +268,14 @@ let state={...BEST.corn,...START.corn};
 
 /* ---------- model ---------- */
 function milkLine(dm){ if(dm<29)return"before 1/3 milk line"; if(dm<32)return"≈ 1/3 milk line"; if(dm<36)return"≈ 1/2 to 2/3 milk line"; if(dm<39)return"≈ 3/4 milk line"; if(dm<42)return"near black layer"; return"black layer, past target"; }
-function porosity(dmdLb,dmPct,ash){ const dm=dmPct/100, rwb=dmdLb*16.018/dm/1000; return 1-rwb*((1-dm)/1+dm*(1-ash)/1.6+dm*ash/2.5); }
+function porosity(dmdLb,dmPct,ash){ const dm=dmPct/100, rwb=dmdLb/dm/62.43; return 1-rwb*((1-dm)/1+dm*(1-ash)/1.6+dm*ash/2.5); }
 
 function model(c,s){
   const corn=c==="corn";
   const ref=corn?33:38;
   let dmd=(corn?15:17)+1.6*Math.log2(s.tractor/40000)-0.25*(s.layer-6)-0.04*(s.tloc-19)+(corn?0.10:0.08)*(s.dm-ref);
   dmd=clamp(dmd,8,20);
-  dmd=Math.min(dmd,850*(s.dm/100)/16.018); /* cap wet bulk density near 850 kg/m3 */
+  dmd=Math.min(dmd,53.07*(s.dm/100)); /* cap wet bulk density near 53 lb/ft3 */
   const por=porosity(dmd,s.dm,corn?0.05:0.10);
   const warm=s.season==="warm";
   const L={};
@@ -333,8 +333,8 @@ function messages(r){
     if(r.kps>=70)add("good","Kernels well processed (score ≈ "+Math.round(r.kps)+")","Broken kernels let rumen microbes reach the starch.");
     else if(r.kps>=50)add("warn","Kernel processing adequate (score ≈ "+Math.round(r.kps)+")","Some whole kernels remain. A tighter roll gap would release more starch.");
     else add("bad","Poor kernel processing (score ≈ "+Math.round(r.kps)+")","Many whole kernels. Starch digestibility drops, especially in drier corn.");
-    if(r.fiber==="low")add("warn","Chop is very short ("+s.tloc+" mm)","Packs well, but cows get less effective fiber, which can lower rumen pH and milk fat.");
-    if(r.fiber==="high")add("warn","Chop is long ("+s.tloc+" mm)","More effective fiber, but long particles pack poorly and cows may sort the ration.");
+    if(r.fiber==="low")add("warn","Chop is very short ("+inFrac(s.tloc)+")","Packs well, but cows get less effective fiber, which can lower rumen pH and milk fat.");
+    if(r.fiber==="high")add("warn","Chop is long ("+inFrac(s.tloc)+")","More effective fiber, but long particles pack poorly and cows may sort the ration.");
     if(s.cut>12)add("good","High cutting height ("+s.cut+" in)","Leaves the least digestible stalk in the field: better quality, about "+Math.abs(Math.round(r.yieldChg))+"% less yield.");
   }else{
     if(r.matPen>=10)add("bad","Cut late (past early bloom)","More stem, less leaf: protein and digestibility drop before the silo is even filled.");
@@ -359,7 +359,12 @@ function messages(r){
 }
 
 /* ---------- controls ---------- */
-function fmt(d,v){ if(d.id==="tractor")return (v/1000)+",000 "+d.unit; return v+" "+d.unit; }
+function inFrac(mm){ /* shown in inches, nearest 1/16 */
+  let s=Math.round(mm/25.4*16), w=Math.floor(s/16), r=s%16, d=16;
+  while(r&&r%2===0){r/=2;d/=2;}
+  return (w?w+(r?" ":""):"")+(r?r+"/"+d:(w?"":"0"))+" in";
+}
+function fmt(d,v){ if(d.id==="tloc")return inFrac(v); if(d.id==="tractor")return (v/1000)+",000 "+d.unit; return v+" "+d.unit; }
 function buildControls(){
   const host=$("#controls"); host.innerHTML="";
   STATIONS.forEach(([key,n,title])=>{
@@ -429,7 +434,7 @@ function update(){
   h+=metric("Porosity (air space)",r.por.toFixed(2),lvlOf(r.por,0.40,0.46,false),"Packed DM density "+r.dmd.toFixed(1)+" lb/ft³ · lower means less air");
   if(crop==="corn"){
     h+=metric("Kernel processing score",Math.round(r.kps),lvlOf(r.kps,70,50,true),"Est. starch digestibility "+Math.round(r.starchDig)+"% · starch content ≈ "+Math.round(r.starch)+"%");
-    h+=metric("Effective fiber",r.fiber==="ok"?"Adequate":r.fiber==="low"?"Low":"High",r.fiber==="ok"?"good":"warn","Chop "+state.tloc+" mm · cutting height "+state.cut+" in ("+(r.yieldChg<0?r.yieldChg.toFixed(0)+"% yield, +"+r.ndfdChg.toFixed(1)+" pts fiber digestibility":"no yield trade-off")+")");
+    h+=metric("Effective fiber",r.fiber==="ok"?"Adequate":r.fiber==="low"?"Low":"High",r.fiber==="ok"?"good":"warn","Chop "+inFrac(state.tloc)+" · cutting height "+state.cut+" in ("+(r.yieldChg<0?r.yieldChg.toFixed(0)+"% yield, +"+r.ndfdChg.toFixed(1)+" pts fiber digestibility":"no yield trade-off")+")");
   }else{
     h+=metric("Crude protein (est.)",r.cp.toFixed(0)+"%",lvlOf(r.cp,20,18,true),"Set mostly by maturity at cutting");
     h+=metric("Protein broken down",Math.round(r.npn)+"%",lvlOf(r.npn,58,64,false),"Share of protein turned to non-protein N in the silo · wetter = more");
