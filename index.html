@@ -173,6 +173,7 @@ input:disabled,select:disabled,button:disabled{opacity:.55;cursor:not-allowed}
             <p class="verdict" id="verdict">--</p>
             <p class="verdict-sub" id="verdict-sub"></p>
             <div class="tons" id="tons"></div>
+            <p class="note" id="rec-note" hidden></p>
           </div>
         </div>
       </div>
@@ -478,6 +479,42 @@ const tip=$("#tip");
 $("#chart").addEventListener("mousemove",e=>{ const t=e.target.getAttribute&&e.target.getAttribute("data-tip"); if(!t){tip.hidden=true;return;} tip.textContent=t; tip.hidden=false; tip.style.left=(e.clientX+12)+"px"; tip.style.top=(e.clientY-30)+"px"; });
 $("#chart").addEventListener("mouseleave",()=>tip.hidden=true);
 
+/* ---------- optional anonymous class results ----------
+   Paste your web app URL between the quotes to turn recording on. Leave it empty to turn it off.
+   Nothing here can stop the game: every step is wrapped, has a time limit, and fails quietly. */
+const RECORD_URL="https://script.google.com/macros/s/AKfycbzX-dj5HO46VCx5DClJ29SBjgsg4I-nJcZLkATEG0Ru-x1cR7ggn9efdZJRwPg6WQ3a/exec";
+const PID=(function(){
+  const mk=()=>"P"+Math.random().toString(36).slice(2,6).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();
+  try{ let v=localStorage.getItem("sdl-pid"); if(!v){ v=mk(); localStorage.setItem("sdl-pid",v); } return v; }catch(e){ return mk(); }
+})();
+function pendingGet(){ try{ return JSON.parse(localStorage.getItem("sdl-pending")||"[]"); }catch(e){ return []; } }
+function pendingSet(a){ try{ localStorage.setItem("sdl-pending",JSON.stringify(a.slice(-20))); }catch(e){} }
+function postOne(rec){
+  return new Promise(resolve=>{
+    let done=false; const fin=v=>{ if(!done){ done=true; resolve(v); } };
+    const t=setTimeout(()=>fin(false),6000);
+    try{
+      fetch(RECORD_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(rec)})
+        .then(()=>{ clearTimeout(t); fin(true); }).catch(()=>{ clearTimeout(t); fin(false); });
+    }catch(e){ clearTimeout(t); fin(false); }
+  });
+}
+async function sendResult(r){
+  if(!RECORD_URL) return;
+  try{
+    let n=attempts.length;
+    try{ n=(+localStorage.getItem("sdl-n")||0)+1; localStorage.setItem("sdl-n",String(n)); }catch(e){}
+    const L={}; for(const k in r.L) L[k]=+r.L[k].toFixed(2);
+    const rec={v:1,id:PID,ts:Date.now(),n:n,crop:crop,score:r.score,total:+r.total.toFixed(2),L:L,por:+r.por.toFixed(3),
+               stab:Math.round(r.stab),kps:crop==="corn"?Math.round(r.kps):null,d:{...state}};
+    const queue=pendingGet().concat([rec]), left=[];
+    for(const q of queue){ const ok=await postOne(q); if(!ok) left.push(q); }
+    pendingSet(left);
+    const note=$("#rec-note"); if(note){ note.hidden=false;
+      note.textContent=left.length?"Your result could not be sent (no connection). Your score still counts here.":"Your result was sent anonymously (ID "+PID+")."; }
+  }catch(e){ /* never interrupt the game */ }
+}
+
 /* events */
 function setCrop(c){
   crop=c; state={...BEST[c],...START[c]};
@@ -494,7 +531,7 @@ const bench=$("#bench"), resultsEl=$("#results"); let attempts=[];
 function setLock(v){ document.querySelectorAll("#controls input,#controls select,#preset,#crop-corn,#crop-alf").forEach(e=>e.disabled=v); }
 function showResults(on){ resultsEl.hidden=!on; bench.classList.toggle("solo",!on); }
 function renderAttempts(){ $("#attempts-panel").hidden=attempts.length<2; $("#attempts").innerHTML=attempts.map((a,i)=>"<li>Attempt "+(i+1)+" ("+a.crop+"): score <b>"+a.score+"</b>, DM loss <b>"+a.loss.toFixed(1)+"%</b></li>").join(""); }
-$("#submit").addEventListener("click",()=>{ const r=model(crop,state); attempts.push({crop:FARM[crop].name,score:r.score,loss:r.total}); renderAttempts(); setLock(true); showResults(true); update(); $("#submit").hidden=true; $("#again").hidden=false; resultsEl.scrollIntoView({behavior:"smooth",block:"start"}); });
+$("#submit").addEventListener("click",()=>{ const r=model(crop,state); attempts.push({crop:FARM[crop].name,score:r.score,loss:r.total}); renderAttempts(); setLock(true); showResults(true); update(); $("#submit").hidden=true; $("#again").hidden=false; resultsEl.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>{ try{ sendResult(r); }catch(e){} },0); });
 $("#again").addEventListener("click",()=>{ setLock(false); showResults(false); $("#submit").hidden=false; $("#again").hidden=true; setCrop(crop); window.scrollTo({top:0,behavior:"smooth"}); });
 setCrop("corn");
 })();
